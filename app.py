@@ -6,13 +6,8 @@ import json
 
 import tempfile # Add this at the top
 
-# ... inside upload_file() ...
-if file and file.filename.endswith('.pdf'):
-    # Create a temporary file path
-    temp_dir = tempfile.gettempdir()
-    filepath = os.path.join(temp_dir, 'uploaded_syllabus.pdf')
-    
-    file.save(filepath)
+
+
     # ... rest of your code
 
 app = Flask(__name__)
@@ -23,6 +18,13 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    if file and file.filename.endswith('.pdf'):
+        # Create a temporary file path
+        temp_dir = tempfile.gettempdir()
+        filepath = os.path.join(temp_dir, 'uploaded_syllabus.pdf')
+        
+        file.save(filepath)
+    
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     
