@@ -35,8 +35,10 @@ def chat(pdf_path="test3point5.pdf"):
 
     messages.append({"role": "assistant", "content": assistant_message})
     
-    with open("output.json", "w") as file:
-        file.write(assistant_message)
+    # Method for when not running on a server 
+    
+    # with open("output.json", "w") as file:
+    #     file.write(assistant_message)
     
     return assistant_message
 
