@@ -1,19 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-from ai import chat, parsePDF
+from ai import chat
 import json
+import tempfile
 
-import tempfile # Add this at the top
-
-
-
-    # ... rest of your code
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
-
-
 
 
 @app.route('/upload', methods=['POST'])

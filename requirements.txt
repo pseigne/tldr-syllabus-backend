@@ -1,5 +1,7 @@
 Flask
 flask-cors
 openai
-pypdf
+pymupdf4llm
+typing
 gunicorn
+pydantic
