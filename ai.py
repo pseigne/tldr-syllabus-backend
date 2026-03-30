@@ -6,46 +6,78 @@ from typing import List, Optional
 import pymupdf4llm
 
 
-class GradeItem(BaseModel):
-    assignment_type: str = Field(description="e.g. 'Homework' or 'Midterm'")
-    percentage: str = Field(description="e.g. '20%' or '200 points'")
 
-class GradeCutoff(BaseModel):
-    grade: str = Field(description="e.g. 'A', 'A-'")
-    cutoff: str = Field(description="e.g. '>= 93%'")
+class GradeItem(BaseModel):
+    assignment_category: str = Field(description="e.g., 'Homework', 'Midterm', 'Final Project'")
+    count: int = Field(description="The number of assignments in this category. e.g., 5 for '5 Homeworks'. Default to 1 if it's a single exam.")
+    weight_percentage: Optional[float] = Field(None, description="The percentage weight of this category towards the final grade, e.g., 20.0. Leave null if the class strictly uses a point system.")
+    total_points: Optional[float] = Field(None, description="The total points this category is worth, if the class uses a point system. Leave null if it uses weights.")
+    drop_lowest: int = Field(0, description="The number of lowest scores dropped in this category. Default is 0.")
+
+class GradeBoundary(BaseModel):
+    letter_grade: str = Field(description="The exact letter grade, e.g., 'A', 'AB', 'B', 'BC', 'C', 'D', 'F'")
+    min_percent: float = Field(description="The minimum percentage required for this grade, e.g., 93.0")
+    max_percent: float = Field(description="The maximum percentage for this grade. For an A, this is usually 100.0")
 
 class ImportantDate(BaseModel):
-    event: str = Field(description="e.g. 'Midterm Exam'")
-    date: str = Field(description="e.g. 'Oct 14th'")
+    event: str = Field(description="e.g., 'Midterm Exam', 'Project 1 Due'")
+    # Force the LLM to format the date so JavaScript's new Date() can read it instantly
+    date_iso: str = Field(description="The date formatted as YYYY-MM-DD. Infer the year based on the syllabus context.")
+    is_deadline: bool = Field(description="True if this is a hard deadline, exam, or deliverable")
 
 
 class Staff(BaseModel):
     name: str
+    role: str = Field(description="'Professor', 'TA', or 'Peer Mentor'")
     email: Optional[str] = None
+    phone: Optional[str] = Field(None, description="Office phone number if provided")
     office: Optional[str] = None
-    officeHours: Optional[str] = None
-    
+    officeHours: Optional[str] = Field(None, description="e.g., 'Tue/Thu 2:00PM-3:00PM'")
+
 class ClassSession(BaseModel):
-    type: str = Field(description="e.g., Lecture, Lab, Discussion")
-    times: List[str] = Field(description="e.g., ['Mon 10:00-11:00', 'Wed 10:00-11:00']")
-    
-class WeeklySchedule(BaseModel):
-    mon: List[str] = []
-    tue: List[str] = []
-    wed: List[str] = []
-    thu: List[str] = []
-    fri: List[str] = []
-    
+    type: str = Field(description="e.g., 'Lecture', 'Lab', 'Discussion'")
+    day_of_week: str = Field(description="e.g., 'Monday', 'Tuesday'")
+    # Standardize the time so your frontend doesn't have to guess AM/PM
+    start_time_24h: str = Field(description="Start time in 24-hour HH:MM format, e.g., '14:30'")
+    end_time_24h: str = Field(description="End time in 24-hour HH:MM format, e.g., '15:45'")
+
+class Topic(BaseModel):
+    week_or_date: str = Field(description="e.g., 'Week 1', 'Sept 4', or 'Module 1'")
+    topic_name: str
+    readings_or_tasks: Optional[str] = Field(None, description="Assigned readings, chapters, or tasks for this specific topic")
+
+class Policy(BaseModel):
+    policy_name: str = Field(description="e.g., 'Academic Integrity', 'Late Work', 'Accommodations'")
+    summary: str = Field(description="A brief 1-2 sentence summary of the policy rules")
+
+class Resource(BaseModel):
+    name: str = Field(description="e.g., 'Piazza', 'Canvas', 'Textbook'")
+    link_or_details: Optional[str] = Field(None, description="URL, ISBN, or location if available")
+
+
+# --- MAIN SYLLABUS MODEL ---
+
 class SyllabusData(BaseModel):
-    course: str
-    professors: List[Staff]
-    TAs: List[Staff]
-    classTime: List[ClassSession]
-    gradeMakeup: List[GradeItem]
-    gradeCutoffs: List[GradeCutoff]
-    importantDates: List[ImportantDate]
+    course_code: str = Field(description="e.g., 'COMP SCI 571' or 'ECON 400'")
+    course_title: Optional[str] = Field(None, description="e.g., 'Building User Interfaces'")
+    credits: Optional[str] = Field(None, description="e.g., '3 credits' or '4'")
+    course_description: Optional[str] = Field(None, description="Official catalog description found in the syllabus")
+
+    # Grouping all staff makes frontend rendering easier (you can filter by role later)
+    staff: List[Staff] = Field(description="All professors, TAs, and instructional staff")
+    class_sessions: List[ClassSession]
+
+    grade_makeup: List[GradeItem]
+    grade_cutoffs: List[GradeBoundary]
     
-    expectedWeeklySchedule: WeeklySchedule
+    important_dates: List[ImportantDate]
+    schedule_of_topics: List[Topic]
+    
+    policies: List[Policy] = Field(description="Important course policies like academic integrity, AI usage, or late work")
+    resources: List[Resource] = Field(description="Textbooks, software, or platforms used in the course")
+    
+    expected_hours_per_week: Optional[str] = Field(None, description="Expected time commitment outside of class, often mandated to be in the syllabus")
+    additional_notes: Optional[str] = Field(None, description="Any other crucial information that doesn't fit elsewhere")
     
 
 
@@ -84,6 +116,7 @@ def chat(pdf_path="test.pdf"):
     return structured_data.model_dump_json()
 
 
+# tester
 def parsePDF2():
     with open("pdfToMarkdown.md", "w") as file:
         md_text = pymupdf4llm.to_markdown('test.pdf')
