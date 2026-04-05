@@ -28,7 +28,7 @@ class ImportantDate(BaseModel):
 
 class Staff(BaseModel):
     name: str
-    role: str = Field(description="'Professor', 'TA', or 'Peer Mentor'")
+    role: str = Field(description="The role of the staff member, e.g., 'Professor', 'Lecturer', 'TA', 'Peer Mentor', etc.")
     email: Optional[str] = None
     phone: Optional[str] = Field(None, description="Office phone number if provided")
     office: Optional[str] = None
@@ -62,6 +62,9 @@ class SyllabusData(BaseModel):
     course_title: Optional[str] = Field(None, description="e.g., 'Building User Interfaces'")
     credits: Optional[str] = Field(None, description="e.g., '3 credits' or '4'")
     course_description: Optional[str] = Field(None, description="Official catalog description found in the syllabus")
+    course_summary: Optional[str] = Field(None, description="Summarize the offical description found in the syllabus to easily refrencable bullets")
+    learning_outcomes: Optional[str] = Field(None, description="If there are course learning outcomes specified then add them in as a bulleted list. Summarize them as well")
+    what_you_will_learn: Optional[str] = Field(None, description="Parsing the syllabus, create a list of what the student will be expected to learn throughout the semester")
 
     # Grouping all staff makes frontend rendering easier (you can filter by role later)
     staff: List[Staff] = Field(description="All professors, TAs, and instructional staff")
