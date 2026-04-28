@@ -1,0 +1,256 @@
+{
+    "course_code": "ECON 695",
+    "course_title": "Data Analysis and Big Data",
+    "credits": "3",
+    "course_description": "This course teaches students how to extract economically meaningful information from data on a scale beyond what basic data-processing software packages (Excel, Access, SPSS) are designed to handle. It is designed for the novice programmer writing code in Python and emphasizes work with spatially detailed data, which provides social scientists with records that describe the who, what, when, and where of human behavior. Students will gain the necessary proficiency with Python programming to record, manipulate, organize, and analyze extremely large datasets. The course will also feature hands-on Geographic Information Systems (GIS) training that will teach students to evaluate and visually represent spatial data.",
+    "course_summary": "- Learn to use Python for large-scale data manipulation\n- GIS training for economic data analysis\n- Project-based learning with a focus on real-world applications",
+    "learning_outcomes": "- Acquire skills in statistical and computational techniques\n- Analyze real world situations and policies with computational techniques\n- Critically evaluate public policy proposals with economic analysis\n- Gain interest in leveraging large datasets for economic analysis\n- Evaluate economic outcomes with GIS technology\n- Develop project management experience\n- Engage with professional communities for big data",
+    "what_you_will_learn": "- Proficiency in Python programming for big data analysis\n- Implementation of GIS in economic research\n- Project management and collaboration skills\n- Application of big data techniques to real-world economic issues",
+    "staff": [
+        {
+            "name": "Matthew Friedman",
+            "role": "Instructor",
+            "email": "mlfriedman@wisc.edu",
+            "phone": null,
+            "office": "Sewall Social Sciences 7414",
+            "officeHours": "Tue/Thu 9:00AM-10:00AM, Mon/Sun 8:00PM-9:00PM"
+        }
+    ],
+    "class_sessions": [
+        {
+            "type": "Lecture",
+            "day_of_week": "Tuesday",
+            "start_time_24h": "13:00",
+            "end_time_24h": "14:15"
+        },
+        {
+            "type": "Lecture",
+            "day_of_week": "Thursday",
+            "start_time_24h": "13:00",
+            "end_time_24h": "14:15"
+        }
+    ],
+    "grade_makeup": [
+        {
+            "assignment_category": "Challenge Problems",
+            "count": 11,
+            "weight_percentage": 25.0,
+            "total_points": null,
+            "drop_lowest": 1
+        },
+        {
+            "assignment_category": "In-Class Exercises",
+            "count": 12,
+            "weight_percentage": 10.0,
+            "total_points": null,
+            "drop_lowest": 2
+        },
+        {
+            "assignment_category": "Data Analysis Project",
+            "count": 1,
+            "weight_percentage": 20.0,
+            "total_points": null,
+            "drop_lowest": 0
+        },
+        {
+            "assignment_category": "Midterm Exam",
+            "count": 1,
+            "weight_percentage": 15.0,
+            "total_points": null,
+            "drop_lowest": 0
+        },
+        {
+            "assignment_category": "Final Exam",
+            "count": 1,
+            "weight_percentage": 30.0,
+            "total_points": null,
+            "drop_lowest": 0
+        }
+    ],
+    "grade_cutoffs": [
+        {
+            "letter_grade": "A",
+            "min_percent": 90.0,
+            "max_percent": 100.0
+        },
+        {
+            "letter_grade": "AB",
+            "min_percent": 85.0,
+            "max_percent": 90.0
+        },
+        {
+            "letter_grade": "B",
+            "min_percent": 80.0,
+            "max_percent": 85.0
+        },
+        {
+            "letter_grade": "BC",
+            "min_percent": 75.0,
+            "max_percent": 80.0
+        },
+        {
+            "letter_grade": "C",
+            "min_percent": 65.0,
+            "max_percent": 75.0
+        },
+        {
+            "letter_grade": "D",
+            "min_percent": 60.0,
+            "max_percent": 65.0
+        }
+    ],
+    "important_dates": [
+        {
+            "event": "Course Drop without Transcript Impact Deadline",
+            "date_iso": "2026-01-28",
+            "is_deadline": true
+        },
+        {
+            "event": "Deadline for 100% Tuition Reimbursement",
+            "date_iso": "2026-01-30",
+            "is_deadline": true
+        },
+        {
+            "event": "50% Tuition Adjustment Deadline",
+            "date_iso": "2026-02-13",
+            "is_deadline": true
+        },
+        {
+            "event": "Final Day to Drop/Withdraw",
+            "date_iso": "2026-04-20",
+            "is_deadline": true
+        },
+        {
+            "event": "Midterm Exam",
+            "date_iso": "2026-03-10",
+            "is_deadline": true
+        },
+        {
+            "event": "Final Exam",
+            "date_iso": "2026-05-03",
+            "is_deadline": true
+        }
+    ],
+    "schedule_of_topics": [
+        {
+            "week_or_date": "Week 1",
+            "topic_name": "Course Introduction & Machine Preparation",
+            "readings_or_tasks": null
+        },
+        {
+            "week_or_date": "Week 2",
+            "topic_name": "Python Fundamentals",
+            "readings_or_tasks": null
+        },
+        {
+            "week_or_date": "Week 3",
+            "topic_name": "Big Data Wrangling",
+            "readings_or_tasks": null
+        },
+        {
+            "week_or_date": "Week 4",
+            "topic_name": "Exploratory Analysis",
+            "readings_or_tasks": null
+        },
+        {
+            "week_or_date": "Week 5",
+            "topic_name": "Regression Basics",
+            "readings_or_tasks": null
+        },
+        {
+            "week_or_date": "Week 6",
+            "topic_name": "Model Selection",
+            "readings_or_tasks": null
+        },
+        {
+            "week_or_date": "Week 7",
+            "topic_name": "Time Series",
+            "readings_or_tasks": null
+        },
+        {
+            "week_or_date": "Week 8",
+            "topic_name": "Clustering",
+            "readings_or_tasks": null
+        },
+        {
+            "week_or_date": "Week 9",
+            "topic_name": "Intro to GIS",
+            "readings_or_tasks": null
+        },
+        {
+            "week_or_date": "Week 10",
+            "topic_name": "GIS Libraries",
+            "readings_or_tasks": null
+        },
+        {
+            "week_or_date": "Week 11",
+            "topic_name": "Spatial Data Representation",
+            "readings_or_tasks": null
+        },
+        {
+            "week_or_date": "Week 12",
+            "topic_name": "Spatial Identification Strategies",
+            "readings_or_tasks": null
+        },
+        {
+            "week_or_date": "Week 13",
+            "topic_name": "Classification",
+            "readings_or_tasks": null
+        },
+        {
+            "week_or_date": "Week 14",
+            "topic_name": "Advanced Algorithms",
+            "readings_or_tasks": null
+        }
+    ],
+    "policies": [
+        {
+            "policy_name": "Recording Lectures",
+            "summary": "Recording of classroom lectures is prohibited without written consent."
+        },
+        {
+            "policy_name": "Testing Accommodations",
+            "summary": "Students must contact the instructor by end of second week for accommodations."
+        },
+        {
+            "policy_name": "Attendance",
+            "summary": "Attendance is not mandatory but noted and part of participation grade."
+        },
+        {
+            "policy_name": "Religious Observances",
+            "summary": "Notify instructor within first two weeks for schedule conflicts."
+        },
+        {
+            "policy_name": "Electronic Devices",
+            "summary": "Devices to be used responsibly, not for distractions."
+        },
+        {
+            "policy_name": "Academic Misconduct",
+            "summary": "Misconduct includes cheating, plagiarism, etc., and will be dealt with according to UWS14 procedures."
+        }
+    ],
+    "resources": [
+        {
+            "name": "Think Python: How to Think Like a Computer Scientist",
+            "link_or_details": "https://greenteapress.com/wp/think-python-2e/"
+        },
+        {
+            "name": "Essentials of Geographic Information Systems",
+            "link_or_details": "https://open.umn.edu/opentextbooks/textbooks/67"
+        },
+        {
+            "name": "The Elements of Statistical Learning",
+            "link_or_details": "https://web.stanford.edu/%7Ehastie/ElemStatLearn/"
+        },
+        {
+            "name": "Canvas",
+            "link_or_details": "Course communication and materials"
+        },
+        {
+            "name": "Social Science Computing Cooperative’s Winstat virtual environment",
+            "link_or_details": "Campus-access software environment"
+        }
+    ],
+    "expected_hours_per_week": "7 hours outside of class",
+    "additional_notes": "Students are expected to check Canvas daily for updates and maintain communication with the instructor."
+}

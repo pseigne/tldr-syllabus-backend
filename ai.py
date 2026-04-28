@@ -24,6 +24,8 @@ class ImportantDate(BaseModel):
     # Force the LLM to format the date so JavaScript's new Date() can read it instantly
     date_iso: str = Field(description="The date formatted as YYYY-MM-DD. Infer the year based on the syllabus context.")
     is_deadline: bool = Field(description="True if this is a hard deadline, exam, or deliverable")
+    grace_period_hours: Optional[int] = Field(None, description="Number of hours after the deadline when late work is accepted (e.g., 48 for 48 hours grace period). Optional.")
+    late_policy_penalty: Optional[str] = Field(None, description="Description of the penalty for late work during the grace period (e.g., '10% penalty'). Optional.")
 
 
 class Staff(BaseModel):
@@ -33,6 +35,12 @@ class Staff(BaseModel):
     phone: Optional[str] = Field(None, description="Office phone number if provided")
     office: Optional[str] = None
     officeHours: Optional[str] = Field(None, description="e.g., 'Tue/Thu 2:00PM-3:00PM'")
+    communication_preference: Optional[str] = Field(None, description="Preferred contact protocol, e.g., 'Piazza only—do not email', or 'Email with [ECON 400] in the subject line'")
+
+class CoursePolicies(BaseModel):
+    ai_policy: Optional[str] = Field(None, description="Summary of the course's policy on AI usage.")
+    late_work_policy: Optional[str] = Field(None, description="Summary of the course's late work policy.")
+    academic_integrity_policy: Optional[str] = Field(None, description="Summary of the course's academic integrity policy.")
 
 class ClassSession(BaseModel):
     type: str = Field(description="e.g., 'Lecture', 'Lab', 'Discussion'")
@@ -44,20 +52,27 @@ class ClassSession(BaseModel):
 class Topic(BaseModel):
     week_or_date: str = Field(description="e.g., 'Week 1', 'Sept 4', or 'Module 1'")
     topic_name: str
-    readings_or_tasks: Optional[str] = Field(None, description="Assigned readings, chapters, or tasks for this specific topic")
+    readings_or_tasks: Optional[List[str]] = Field(None, description="Assigned readings, chapters, or tasks for this specific topic, as a list of strings.")
 
 class Policy(BaseModel):
     policy_name: str = Field(description="e.g., 'Academic Integrity', 'Late Work', 'Accommodations'")
     summary: str = Field(description="A brief 1-2 sentence summary of the policy rules")
 
+
+# --- RESOURCE CLASS WITH TYPE ---
 class Resource(BaseModel):
-    name: str = Field(description="e.g., 'Piazza', 'Canvas', 'Textbook'")
-    link_or_details: Optional[str] = Field(None, description="URL, ISBN, or location if available")
+    name: str = Field(description="Name of the resource, e.g., 'Piazza', 'Canvas', 'Textbook', 'Python Crash Course'")
+    resource_type: Optional[str] = Field(None, description="Type of resource, e.g., 'book', 'website', 'platform', 'article', etc.")
+    isbn: Optional[str] = Field(None, description="ISBN number if the resource is a book")
+    link: Optional[str] = Field(None, description="URL if the resource is a website or online platform")
+    details: Optional[str] = Field(None, description="Any additional details, e.g., edition, author, or location")
 
 
 # --- MAIN SYLLABUS MODEL ---
 
 class SyllabusData(BaseModel):
+    
+    university_name: Optional[str] = Field(None, description="The name of the University or school offering the course, e.g., 'University of Wisconsin-Madison'.")
     course_code: str = Field(description="e.g., 'COMP SCI 571' or 'ECON 400'")
     course_title: Optional[str] = Field(None, description="e.g., 'Building User Interfaces'")
     credits: Optional[str] = Field(None, description="e.g., '3 credits' or '4'")
@@ -65,6 +80,9 @@ class SyllabusData(BaseModel):
     course_summary: Optional[str] = Field(None, description="Summarize the offical description found in the syllabus to easily refrencable bullets")
     learning_outcomes: Optional[str] = Field(None, description="If there are course learning outcomes specified then add them in as a bulleted list. Summarize them as well")
     what_you_will_learn: Optional[str] = Field(None, description="Parsing the syllabus, create a list of what the student will be expected to learn throughout the semester")
+    grading_scheme: str = Field(description="Identifies if the grading is 'cumulative_points' or 'weighted_percentages'. For what-if calculator.")
+    semester_year: int = Field(description="The year the course is held (e.g., 2026). Required. If not specified, assume current year.")
+    semester_season: Optional[str] = Field(None, description="The semester season, e.g., 'Spring', 'Summer', 'Fall', 'Winter'. Optional.")
 
     # Grouping all staff makes frontend rendering easier (you can filter by role later)
     staff: List[Staff] = Field(description="All professors, TAs, and instructional staff")
@@ -99,11 +117,24 @@ def chat(pdf_path="test.pdf"):
     print("Converting PDF to Markdown...")
     md_text = pymupdf4llm.to_markdown(pdf_path)
 
+    # Safeguard 2: Check if the document is a syllabus using the AI model
+    print("Checking if document is a syllabus...")
+    check_response = client.chat.completions.create(
+        model="gpt-4o-2024-08-06",
+        messages=[
+            {"role": "system", "content": "You are an expert at identifying academic syllabi. Only respond with 'yes' or 'no'."},
+            {"role": "user", "content": f"Is the following document a course syllabus?\n\n{md_text[:3000]}"}
+        ]
+    )
+    is_syllabus = check_response.choices[0].message.content.strip().lower()
+    if not is_syllabus.startswith("yes"):
+        raise ValueError("The document does not appear to be a course syllabus.")
+
     print("Analyzing Syllabus...")
 
     # We use client.beta.chat.completions.parse to enforce the Pydantic schema
     completion = client.beta.chat.completions.parse(
-        model="gpt-4o-2024-08-06", # Use the latest model for best structure adherence
+        model="gpt-4o-2024-08-06",
         messages=[
             {"role": "system", "content": "You are a a professional syllabus analyzer that provides structured data from course syllabi. Extract the data exactly into the requested JSON format. If a field is missing, use null or an empty list."},
             {"role": "user", "content": f"Here is the syllabus content:\n\n{md_text}"},

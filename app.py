@@ -86,5 +86,37 @@ def analyze_local_file():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/save-local', methods=['GET'])
+def save_local_file():
+    """Analyze a PDF from the `tests` directory and save the parsed JSON to disk.
+
+    This endpoint does not return the parsed JSON content—only a status message.
+    Use the `file` query parameter to pick a file from the `tests` folder.
+    """
+    filename = request.args.get('file', '').strip()
+    if not filename:
+        return jsonify({'error': "Missing 'file' query parameter"}), 400
+
+    try:
+        filepath = _resolve_local_test_pdf(filename)
+        result = chat(str(filepath))
+
+        # Ensure output dir exists inside repository
+        out_dir = BASE_DIR / 'saved_outputs'
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        out_path = out_dir / (Path(filename).stem + '.json')
+        with open(out_path, 'w') as f:
+            f.write(result)
+
+        return jsonify({'message': f'Saved parsed syllabus to {str(out_path)}'}), 200
+    except FileNotFoundError as e:
+        return jsonify({'error': str(e)}), 404
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
