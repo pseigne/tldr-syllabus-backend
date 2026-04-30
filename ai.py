@@ -145,7 +145,20 @@ def chat(pdf_path="test.pdf"):
 
     # The result is already a python object validated against your class
     structured_data = completion.choices[0].message.parsed
-    
+
+    # --- Integrate point system to percentage conversion ---
+    # If the grading scheme is cumulative_points, convert total_points to weight_percentage
+    if hasattr(structured_data, 'grading_scheme') and structured_data.grading_scheme == 'cumulative_points':
+        grade_makeup = getattr(structured_data, 'grade_makeup', [])
+        # Only proceed if all items have total_points and at least one is not None
+        total_points_sum = sum(item.total_points for item in grade_makeup if item.total_points is not None)
+        if total_points_sum > 0:
+            for item in grade_makeup:
+                if item.total_points is not None:
+                    item.weight_percentage = (item.total_points / total_points_sum) * 100
+                else:
+                    item.weight_percentage = None
+
     # Convert back to JSON string for your frontend
     return structured_data.model_dump_json()
 
