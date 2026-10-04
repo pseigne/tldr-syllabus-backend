@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: pierce-syllabus-api
+    runtime: python
+    plan: free
+    region: virginia
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 200
+    healthCheckPath: /health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: OPENAI_MODEL
+        value: gpt-4o-2024-08-06
+      - key: ALLOWED_ORIGINS
+        value: https://pierceseigne.com
+      - key: RATE_LIMIT_SALT
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false

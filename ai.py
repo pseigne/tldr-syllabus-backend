@@ -103,24 +103,18 @@ class SyllabusData(BaseModel):
 
 
 def chat(pdf_path="test.pdf"):
-    # Load API key
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        try:
-            with open("OPENAI_API_KEY.txt", "r") as f:
-                api_key = f.read().strip()
-        except FileNotFoundError:
-            raise ValueError("OPENAI_API_KEY not found.")
-    
-    client = OpenAI(api_key=api_key)
+    api_key = os.environ["OPENAI_API_KEY"]
+    client = OpenAI(api_key=api_key, timeout=75.0, max_retries=0)
+    model = os.getenv("OPENAI_MODEL", "gpt-4o-2024-08-06")
 
-    print("Converting PDF to Markdown...")
     md_text = pymupdf4llm.to_markdown(pdf_path)
 
+    if len(md_text) > 100_000:
+        raise ValueError("The syllabus contains too much text. Upload a shorter PDF.")
+
     # Safeguard 2: Check if the document is a syllabus using the AI model
-    print("Checking if document is a syllabus...")
     check_response = client.chat.completions.create(
-        model="gpt-4o-2024-08-06",
+        model=model,
         messages=[
             {"role": "system", "content": "You are an expert at identifying academic syllabi. Only respond with 'yes' or 'no'."},
             {"role": "user", "content": f"Is the following document a course syllabus?\n\n{md_text[:3000]}"}
@@ -130,11 +124,10 @@ def chat(pdf_path="test.pdf"):
     if not is_syllabus.startswith("yes"):
         raise ValueError("The document does not appear to be a course syllabus.")
 
-    print("Analyzing Syllabus...")
 
     # We use client.beta.chat.completions.parse to enforce the Pydantic schema
     completion = client.beta.chat.completions.parse(
-        model="gpt-4o-2024-08-06",
+        model=model,
         messages=[
             {"role": "system", "content": "You are a a professional syllabus analyzer that provides structured data from course syllabi. Extract the data exactly into the requested JSON format. If a field is missing, use null or an empty list."},
             {"role": "user", "content": f"Here is the syllabus content:\n\n{md_text}"},
@@ -145,6 +138,9 @@ def chat(pdf_path="test.pdf"):
 
     # The result is already a python object validated against your class
     structured_data = completion.choices[0].message.parsed
+
+    if structured_data is None:
+        raise ValueError("The analyzer could not read this syllabus. Try another PDF.")
 
     # --- Integrate point system to percentage conversion ---
     # If the grading scheme is cumulative_points, convert total_points to weight_percentage

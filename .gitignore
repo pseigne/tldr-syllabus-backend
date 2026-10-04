@@ -1,0 +1,6 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+OPENAI_API_KEY.txt
+.DS_Store

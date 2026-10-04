@@ -1,122 +1,82 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import os
-from ai import chat
+import hashlib
+import hmac
 import json
+import os
 import tempfile
-from pathlib import Path
+import threading
+from datetime import datetime, timezone
 
+import pymupdf
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from openai import APIError, APITimeoutError
+from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.middleware.proxy_fix import ProxyFix
+from ai import chat
+from quotas import QuotaUnavailable, reserve
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024 + 65536
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+CORS(app, origins=os.getenv('ALLOWED_ORIGINS', 'https://pierceseigne.com').split(','))
+processing = threading.BoundedSemaphore(1)
 
 
-BASE_DIR = Path(__file__).resolve().parents[1]
-TESTS_DIR = BASE_DIR / "tests"
+def configured():
+    return all(os.getenv(key) for key in ('OPENAI_API_KEY', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN', 'RATE_LIMIT_SALT'))
 
 
-def _resolve_local_test_pdf(filename: str) -> Path:
-    """Resolve a local test PDF safely to prevent path traversal."""
-    candidate = (TESTS_DIR / filename).resolve()
-    if TESTS_DIR.resolve() not in candidate.parents:
-        raise ValueError("Invalid file path")
-    if not candidate.exists() or candidate.suffix.lower() != ".pdf":
-        raise FileNotFoundError("PDF not found in tests directory")
-    return candidate
+@app.get('/health')
+def health():
+    return jsonify(status='ok', uploads_enabled=configured())
 
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    # 1. Check if the file part exists
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-    
-    file = request.files['file']
-    
-    # 2. Check if user selected a file
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-    
-    # 3. Save and Process
-    if file and file.filename.lower().endswith('.pdf'):
-        # Correctly use tempfile for cloud compatibility
-        temp_dir = tempfile.gettempdir()
-        filepath = os.path.join(temp_dir, 'uploaded_syllabus.pdf')
-        
+@app.errorhandler(RequestEntityTooLarge)
+def too_large(_error):
+    return jsonify(error='Choose a PDF smaller than 10 MB.'), 413
+
+
+@app.post('/upload')
+def upload():
+    if not configured():
+        return jsonify(error='Uploads are unavailable. You can still explore the example syllabi.'), 503
+    file = request.files.get('file')
+    if not file or not file.filename or not file.filename.lower().endswith('.pdf'):
+        return jsonify(error='Choose a PDF syllabus.'), 400
+    with tempfile.TemporaryDirectory(prefix='syllabus-') as folder:
+        path = os.path.join(folder, 'syllabus.pdf')
+        file.save(path)
+        if os.path.getsize(path) > 10 * 1024 * 1024:
+            return too_large(None)
         try:
-            file.save(filepath)
-            
-            # Pass the absolute path to your AI function
-            result = chat(filepath)
-            
-            # Clean up: delete the temp file after reading
-            os.remove(filepath)
-            
-            return jsonify(json.loads(result)), 200
-            
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
-    
-    return jsonify({'error': 'Invalid file type'}), 400
+            with pymupdf.open(path) as document:
+                if not document.is_pdf or document.needs_pass or not 1 <= document.page_count <= 30:
+                    return jsonify(error='Choose an unlocked PDF with 1–30 pages.'), 400
+        except (RuntimeError, ValueError):
+            return jsonify(error='This file could not be read as a PDF.'), 400
+        if not processing.acquire(blocking=False):
+            return jsonify(error='The analyzer is busy. Try again in a moment.'), 429, {'Retry-After': '30'}
+        try:
+            visitor = hmac.new(os.environ['RATE_LIMIT_SALT'].encode(), (request.remote_addr or 'unknown').encode(), hashlib.sha256).hexdigest()
+            day = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            if not reserve(day, visitor):
+                return jsonify(error='The daily upload limit has been reached. Explore an example syllabus or return tomorrow.'), 429
+            return jsonify(json.loads(chat(path)))
+        except QuotaUnavailable:
+            return jsonify(error='Uploads are temporarily unavailable. Please explore an example syllabus.'), 503
+        except APITimeoutError:
+            return jsonify(error='Analysis took too long. Please try again later.'), 504
+        except APIError:
+            app.logger.warning('AI provider request failed')
+            return jsonify(error='The analysis service is temporarily unavailable.'), 503
+        except ValueError:
+            return jsonify(error='This PDF could not be analyzed. Try a shorter, text-based syllabus.'), 400
+        except Exception:
+            app.logger.exception('Syllabus processing failed')
+            return jsonify(error='This syllabus could not be processed.'), 500
+        finally:
+            processing.release()
 
-
-@app.route('/test-files', methods=['GET'])
-def list_test_files():
-    if not TESTS_DIR.exists():
-        return jsonify({'error': 'tests directory not found'}), 404
-
-    files = sorted([p.name for p in TESTS_DIR.glob('*.pdf')])
-    return jsonify({'files': files}), 200
-
-
-@app.route('/analyze-local', methods=['GET'])
-def analyze_local_file():
-    filename = request.args.get('file', '').strip()
-    if not filename:
-        return jsonify({'error': "Missing 'file' query parameter"}), 400
-
-    try:
-        filepath = _resolve_local_test_pdf(filename)
-        result = chat(str(filepath))
-        return jsonify(json.loads(result)), 200
-    except FileNotFoundError as e:
-        return jsonify({'error': str(e)}), 404
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-# @app.route('/save-local', methods=['GET'])
-# def save_local_file():
-#     """Analyze a PDF from the `tests` directory and save the parsed JSON to disk.
-
-#     This endpoint does not return the parsed JSON content—only a status message.
-#     Use the `file` query parameter to pick a file from the `tests` folder.
-#     """
-#     filename = request.args.get('file', '').strip()
-#     if not filename:
-#         return jsonify({'error': "Missing 'file' query parameter"}), 400
-
-#     try:
-#         filepath = _resolve_local_test_pdf(filename)
-#         result = chat(str(filepath))
-
-#         # Ensure output dir exists inside repository
-#         out_dir = BASE_DIR / 'saved_outputs'
-#         out_dir.mkdir(parents=True, exist_ok=True)
-
-#         out_path = out_dir / (Path(filename).stem + '.json')
-#         with open(out_path, 'w') as f:
-#             f.write(result)
-
-#         return jsonify({'message': f'Saved parsed syllabus to {str(out_path)}'}), 200
-#     except FileNotFoundError as e:
-#         return jsonify({'error': str(e)}), 404
-#     except ValueError as e:
-#         return jsonify({'error': str(e)}), 400
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(port=5001)
