@@ -1,3 +1,5 @@
+> **Moved:** this project now lives in [pseigne/tldr-syllabus](https://github.com/pseigne/tldr-syllabus) under `backend/`, with full history. This repository is archived.
+
 # Syllabus analyzer API
 
 Flask API for the portfolio Syllabus Analyzer. Deploy the `render.yaml` blueprint on Render's Free web-service plan; no paid instance or payment method is required. The service sleeps when idle, so the frontend displays a startup message while it wakes.
